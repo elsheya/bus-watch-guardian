@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { CalendarCheck, MessageSquare, ArrowLeft } from 'lucide-react';
-import { MisconductReport, ReportStatus, Comment, AuditLog } from '../types';
+import { MisconductReport, ReportStatus, Comment, AuditLog, UserRole } from '../types';
 import { useToast } from '@/hooks/use-toast';
 
 // Mock data for reports (same as in Reports.tsx)
@@ -131,7 +131,7 @@ const mockReports: MisconductReport[] = [
 ];
 
 // Function to generate audit logs
-const generateAuditLog = (userId: string, userName: string, userRole: string, action: string, entityType: 'report' | 'user' | 'school' | 'comment' | 'system', entityId: string, details: string): AuditLog => {
+const generateAuditLog = (userId: string, userName: string, userRole: UserRole, action: string, entityType: 'report' | 'user' | 'school' | 'comment' | 'system', entityId: string, details: string): AuditLog => {
   return {
     id: Math.random().toString(36).substring(2, 9),
     userId,
