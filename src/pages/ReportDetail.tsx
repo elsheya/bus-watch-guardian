@@ -150,11 +150,11 @@ const generateAuditLog = (userId: string, userName: string, userRole: UserRole, 
 const getStatusBadge = (status: ReportStatus) => {
   switch (status) {
     case 'pending':
-      return <Badge variant="outline" className="bg-warning text-warning-foreground">Pending</Badge>;
+      return <Badge variant="outline" className="bg-buswatch-pending/20 text-buswatch-pending font-medium border-buswatch-pending/30">Pending</Badge>;
     case 'reviewed':
-      return <Badge variant="outline" className="bg-accent text-accent-foreground">Reviewed</Badge>;
+      return <Badge variant="outline" className="bg-buswatch-reviewed/20 text-buswatch-reviewed font-medium border-buswatch-reviewed/30">Reviewed</Badge>;
     case 'resolved':
-      return <Badge variant="outline" className="bg-success text-success-foreground">Resolved</Badge>;
+      return <Badge variant="outline" className="bg-buswatch-resolved/20 text-buswatch-resolved font-medium border-buswatch-resolved/30">Resolved</Badge>;
     default:
       return null;
   }
@@ -342,162 +342,171 @@ const ReportDetail: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/reports')}
-            className="mr-4"
-          >
-            <ArrowLeft size={16} className="mr-2" />
-            Back to Reports
-          </Button>
-          <h1 className="text-3xl font-bold">Misconduct Report</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {canDownloadPdf && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPdf}
-              disabled={isPdfGenerating}
-              className="flex items-center gap-1"
+      {/* Header Section */}
+      <div className="header-gradient rounded-lg p-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/reports')}
+              className="mr-4 text-white hover:bg-white/20"
             >
-              <Download size={16} />
-              {isPdfGenerating ? "Generating..." : "Export PDF"}
+              <ArrowLeft size={16} className="mr-2" />
+              Back to Reports
             </Button>
-          )}
-          
-          <span className="ml-2 mr-2">Status:</span>
-          {getStatusBadge(report.status)}
-          
-          {canChangeStatus && (
-            <div className="ml-4">
-              <Select
-                value={newStatus}
-                onValueChange={(value) => handleStatusChange(value as ReportStatus)}
-                disabled={isSubmitting}
+            <h1 className="text-3xl font-bold">Misconduct Report</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {canDownloadPdf && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExportPdf}
+                disabled={isPdfGenerating}
+                className="flex items-center gap-1 bg-white/20 hover:bg-white/30 text-white"
               >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Change status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+                <Download size={16} />
+                {isPdfGenerating ? "Generating..." : "Export PDF"}
+              </Button>
+            )}
+            
+            <span className="ml-2 mr-2 text-white">Status:</span>
+            {getStatusBadge(report.status)}
+            
+            {canChangeStatus && (
+              <div className="ml-4">
+                <Select
+                  value={newStatus}
+                  onValueChange={(value) => handleStatusChange(value as ReportStatus)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger className="w-[140px] border-white/30 bg-white/20 text-white">
+                    <SelectValue placeholder="Change status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="reviewed">Reviewed</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6" ref={reportRef}>
+      <div className="space-y-6" ref={reportRef}>
         {/* Report details */}
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Incident Details</CardTitle>
-              <CardDescription>
-                Reported on {format(report.createdAt, 'MMMM d, yyyy')} by {report.driverName}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Student Name</p>
-                  <p className="font-medium">{report.studentName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Bus Route</p>
-                  <p className="font-medium">{report.busRoute}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Incident Date</p>
-                  <div className="flex items-center">
-                    <CalendarCheck size={16} className="mr-2 text-muted-foreground" />
-                    <p className="font-medium">{format(report.incidentDate, 'MMMM d, yyyy')}</p>
+        <Card className="card-gradient shadow-lg border-t-4 border-t-buswatch-primary">
+          <CardHeader className="border-b pb-4">
+            <CardTitle>Incident Details</CardTitle>
+            <CardDescription>
+              Reported on {format(report.createdAt, 'MMMM d, yyyy')} by {report.driverName}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-buswatch-text-muted mb-1">Student Name</p>
+                <p className="font-medium text-buswatch-text-primary text-lg">{report.studentName}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-buswatch-text-muted mb-1">Bus Route</p>
+                <p className="font-medium text-buswatch-text-primary text-lg">Route {report.busRoute}</p>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-buswatch-text-muted mb-1">Incident Date</p>
+                <div className="flex items-center">
+                  <div className="icon-container mr-2">
+                    <CalendarCheck size={16} />
                   </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">School</p>
-                  <p className="font-medium">{report.schoolName}</p>
+                  <p className="font-medium text-buswatch-text-primary text-lg">{format(report.incidentDate, 'MMMM d, yyyy')}</p>
                 </div>
               </div>
-              
+              <div className="bg-white p-4 rounded-lg shadow-sm">
+                <p className="text-sm text-buswatch-text-muted mb-1">School</p>
+                <p className="font-medium text-buswatch-text-primary text-lg">{report.schoolName}</p>
+              </div>
+            </div>
+            
+            <div className="bg-white p-5 rounded-lg shadow-sm">
+              <p className="text-sm text-buswatch-text-muted mb-2">Description</p>
+              <p className="text-buswatch-text-primary">{report.description}</p>
+            </div>
+            
+            {report.attachmentUrl && (
               <div className="pt-2">
-                <p className="text-sm text-muted-foreground mb-1">Description</p>
-                <p>{report.description}</p>
+                <p className="text-sm text-buswatch-text-muted mb-1">Attachment</p>
+                <Button variant="outline" size="sm">
+                  View Attachment
+                </Button>
               </div>
-              
-              {report.attachmentUrl && (
-                <div className="pt-2">
-                  <p className="text-sm text-muted-foreground mb-1">Attachment</p>
-                  <Button variant="outline" size="sm">
-                    View Attachment
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Comments section */}
-        <div className="md:col-span-1">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <MessageSquare size={18} className="mr-2" />
-                Comments
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {report.comments.length > 0 ? (
-                <div className="space-y-4">
-                  {report.comments.map((comment) => (
-                    <div key={comment.id} className="border rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium">{comment.userName}</p>
-                          <p className="text-xs text-muted-foreground">{comment.userRole.replace('-', ' ')}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {format(comment.createdAt, 'MMM d, yyyy h:mm a')}
-                        </p>
+        <Card className="card-gradient shadow-lg border-t-4 border-t-buswatch-accent">
+          <CardHeader className="border-b pb-4">
+            <CardTitle className="flex items-center">
+              <div className="icon-container mr-2">
+                <MessageSquare size={16} />
+              </div>
+              Comments
+            </CardTitle>
+            <CardDescription>
+              Communication related to this incident
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {report.comments.length > 0 ? (
+              <div className="space-y-4">
+                {report.comments.map((comment) => (
+                  <div key={comment.id} className="border rounded-lg p-4 bg-white hover:shadow-md transition-all">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-medium text-buswatch-primary">{comment.userName}</p>
+                        <p className="text-xs text-buswatch-text-muted">{comment.userRole.replace('-', ' ')}</p>
                       </div>
-                      <p>{comment.content}</p>
+                      <p className="text-xs text-buswatch-text-muted bg-buswatch-accent/10 px-2 py-1 rounded-full">
+                        {format(comment.createdAt, 'MMM d, yyyy h:mm a')}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-4">No comments yet</p>
-              )}
-            </CardContent>
-            
-            {canAddComments && (
-              <>
-                <Separator />
-                <CardFooter className="flex flex-col pt-4">
-                  <Textarea
-                    placeholder="Add a comment..."
-                    className="min-h-[100px] mb-2"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                  <Button
-                    onClick={handleAddComment}
-                    className="w-full"
-                    disabled={!newComment.trim() || isSubmitting}
-                  >
-                    {isSubmitting ? "Adding Comment..." : "Add Comment"}
-                  </Button>
-                </CardFooter>
-              </>
+                    <p className="text-buswatch-text-secondary">{comment.content}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <MessageSquare size={32} className="mx-auto text-buswatch-text-muted mb-2 opacity-50" />
+                <p className="text-buswatch-text-muted">No comments yet</p>
+              </div>
             )}
-          </Card>
-        </div>
+          </CardContent>
+          
+          {canAddComments && (
+            <>
+              <Separator />
+              <CardFooter className="flex flex-col pt-4">
+                <Textarea
+                  placeholder="Add a comment..."
+                  className="min-h-[120px] mb-4 border-buswatch-accent/30 focus:border-buswatch-accent"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  disabled={isSubmitting}
+                />
+                <Button
+                  onClick={handleAddComment}
+                  className="w-full bg-gradient-to-r from-buswatch-primary to-buswatch-accent hover:opacity-90"
+                  disabled={!newComment.trim() || isSubmitting}
+                >
+                  {isSubmitting ? "Adding Comment..." : "Add Comment"}
+                </Button>
+              </CardFooter>
+            </>
+          )}
+        </Card>
       </div>
     </div>
   );

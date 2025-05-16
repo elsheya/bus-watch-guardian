@@ -64,13 +64,29 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				buswatch: {
-					primary: '#1e40af',
-					secondary: '#475569',
-					accent: '#3b82f6',
-					success: '#22c55e',
-					warning: '#f59e0b',
-					error: '#ef4444',
-					background: '#f8fafc'
+					primary: '#4361ee',
+					secondary: '#3f37c9',
+					accent: '#4895ef',
+					success: '#4cc9f0',
+					warning: '#f72585',
+					error: '#e5383b',
+					background: '#f8f9fa',
+					card: {
+						DEFAULT: '#ffffff',
+						hover: '#f1faff',
+					},
+					pending: '#ff9e00',
+					reviewed: '#7209b7',
+					resolved: '#06d6a0',
+					text: {
+						primary: '#212529',
+						secondary: '#495057',
+						muted: '#6c757d'
+					},
+					gradient: {
+						primary: 'linear-gradient(to right, #4361ee, #4cc9f0)',
+						secondary: 'linear-gradient(to right, #7209b7, #f72585)'
+					}
 				}
 			},
 			borderRadius: {

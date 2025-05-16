@@ -14,11 +14,11 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 220 79% 60%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 215 20.2% 65.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 246 80% 50%;
+    --secondary-foreground: 210 40% 98%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -29,25 +29,25 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 355.7 100% 97.3%;
+    --success: 180 75% 55%;
+    --success-foreground: 210 40% 98%;
 
-    --warning: 32.1 94.6% 43.7%;
-    --warning-foreground: 355.7 100% 97.3%;
+    --warning: 35 92% 50%;
+    --warning-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 221.2 83.2% 53.3%;
+    --sidebar-background: 246 80% 50%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
     --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 91.2% 49.8%;
+    --sidebar-accent: 224 76% 48%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 40.5%;
+    --sidebar-border: 246 70% 40%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -114,7 +114,7 @@
   }
   
   .buswatch-card {
-    @apply bg-white rounded-lg shadow-md p-6 border border-border buswatch-transition;
+    @apply bg-white rounded-lg shadow-md p-6 border border-border buswatch-transition hover:shadow-lg;
   }
   
   .buswatch-status-pill {
@@ -122,14 +122,26 @@
   }
   
   .status-pending {
-    @apply bg-warning/20 text-warning;
+    @apply bg-buswatch-pending/20 text-buswatch-pending font-semibold;
   }
   
   .status-reviewed {
-    @apply bg-accent/20 text-accent;
+    @apply bg-buswatch-reviewed/20 text-buswatch-reviewed font-semibold;
   }
   
   .status-resolved {
-    @apply bg-success/20 text-success;
+    @apply bg-buswatch-resolved/20 text-buswatch-resolved font-semibold;
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-blue-50;
+  }
+
+  .header-gradient {
+    @apply bg-gradient-to-r from-buswatch-primary to-buswatch-accent text-white;
+  }
+  
+  .icon-container {
+    @apply rounded-full bg-blue-100 p-2 text-blue-600;
   }
 }

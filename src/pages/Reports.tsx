@@ -184,11 +184,11 @@ const Reports: React.FC = () => {
   const getStatusBadge = (status: ReportStatus) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-warning text-warning-foreground">Pending</Badge>;
+        return <Badge className="bg-buswatch-pending/20 text-buswatch-pending font-medium border border-buswatch-pending/30">Pending</Badge>;
       case 'reviewed':
-        return <Badge className="bg-accent text-accent-foreground">Reviewed</Badge>;
+        return <Badge className="bg-buswatch-reviewed/20 text-buswatch-reviewed font-medium border border-buswatch-reviewed/30">Reviewed</Badge>;
       case 'resolved':
-        return <Badge className="bg-success text-success-foreground">Resolved</Badge>;
+        return <Badge className="bg-buswatch-resolved/20 text-buswatch-resolved font-medium border border-buswatch-resolved/30">Resolved</Badge>;
       default:
         return null;
     }
@@ -196,22 +196,25 @@ const Reports: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Misconduct Reports</h1>
-          <p className="text-muted-foreground mt-1">
-            {hasRole(['driver']) ? 'View and manage your submitted reports' : 'View and manage all student misconduct reports'}
-          </p>
-        </div>
+      <div className="header-gradient rounded-lg p-4 shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Misconduct Reports</h1>
+            <p className="text-white/80 mt-1">
+              {hasRole(['driver']) ? 'View and manage your submitted reports' : 'View and manage all student misconduct reports'}
+            </p>
+          </div>
 
-        {hasRole(['driver']) && (
-          <Button onClick={() => navigate('/new-report')}>
-            Create New Report
-          </Button>
-        )}
+          {hasRole(['driver']) && (
+            <Button onClick={() => navigate('/new-report')} 
+                    className="bg-white text-buswatch-primary hover:bg-white/90">
+              Create New Report
+            </Button>
+          )}
+        </div>
       </div>
 
-      <Card>
+      <Card className="card-gradient shadow-lg border-t-4 border-t-buswatch-primary">
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
             <div>
@@ -226,7 +229,7 @@ const Reports: React.FC = () => {
                 <Input
                   type="search"
                   placeholder="Search reports..."
-                  className="pl-8 w-full sm:w-[200px]"
+                  className="pl-8 w-full sm:w-[200px] border-buswatch-primary/30 focus-visible:ring-buswatch-primary"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -236,7 +239,7 @@ const Reports: React.FC = () => {
                   value={statusFilter}
                   onValueChange={(value) => setStatusFilter(value as ReportStatus | 'all')}
                 >
-                  <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px] border-buswatch-primary/30 focus:ring-buswatch-primary">
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -251,7 +254,7 @@ const Reports: React.FC = () => {
                   value={busRouteFilter}
                   onValueChange={(value) => setBusRouteFilter(value)}
                 >
-                  <SelectTrigger className="w-full sm:w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px] border-buswatch-primary/30 focus:ring-buswatch-primary">
                     <SelectValue placeholder="Filter by route" />
                   </SelectTrigger>
                   <SelectContent>
@@ -267,22 +270,22 @@ const Reports: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="rounded-md border border-buswatch-primary/10 overflow-hidden">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-buswatch-primary/5">
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Route</TableHead>
-                  {!hasRole(['driver']) && <TableHead>Driver</TableHead>}
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-buswatch-text-primary font-medium">Date</TableHead>
+                  <TableHead className="text-buswatch-text-primary font-medium">Student</TableHead>
+                  <TableHead className="text-buswatch-text-primary font-medium">Route</TableHead>
+                  {!hasRole(['driver']) && <TableHead className="text-buswatch-text-primary font-medium">Driver</TableHead>}
+                  <TableHead className="text-buswatch-text-primary font-medium">Status</TableHead>
+                  <TableHead className="text-buswatch-text-primary font-medium">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredReports.length > 0 ? (
                   filteredReports.map((report) => (
-                    <TableRow key={report.id}>
+                    <TableRow key={report.id} className="hover:bg-buswatch-card-hover">
                       <TableCell>
                         {format(report.incidentDate, 'MMM dd, yyyy')}
                       </TableCell>
@@ -295,6 +298,7 @@ const Reports: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => navigate(`/reports/${report.id}`)}
+                          className="text-buswatch-primary hover:text-buswatch-primary hover:bg-buswatch-primary/10"
                         >
                           <FileText size={16} className="mr-1" />
                           View
@@ -304,8 +308,11 @@ const Reports: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={hasRole(['driver']) ? 5 : 6} className="text-center py-4 text-muted-foreground">
-                      No reports found. {hasRole(['driver']) && 'Create a new report to get started.'}
+                    <TableCell colSpan={hasRole(['driver']) ? 5 : 6} className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center">
+                        <FileText size={36} className="text-buswatch-text-muted mb-2 opacity-50" />
+                        <p>No reports found. {hasRole(['driver']) && 'Create a new report to get started.'}</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}
