@@ -12,7 +12,11 @@ import { MainLayout } from "./components/layouts/MainLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
+import ReportDetail from "./pages/ReportDetail";
 import NewReport from "./pages/NewReport";
+import UserManagement from "./pages/UserManagement";
+import SchoolManagement from "./pages/SchoolManagement";
+import AuditLogs from "./pages/AuditLogs";
 import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 
@@ -41,17 +45,27 @@ const App = () => (
             }>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/:id" element={<ReportDetail />} />
               <Route path="/new-report" element={
                 <ProtectedRoute roles={['driver']}>
                   <NewReport />
                 </ProtectedRoute>
               } />
-              
-              {/* TODO: Implement these routes in the future */}
-              <Route path="/reports/:id" element={<div className="p-8">Report Details (Coming Soon)</div>} />
-              <Route path="/users" element={<div className="p-8">User Management (Coming Soon)</div>} />
-              <Route path="/schools" element={<div className="p-8">School Management (Coming Soon)</div>} />
-              <Route path="/audit-logs" element={<div className="p-8">Audit Logs (Coming Soon)</div>} />
+              <Route path="/users" element={
+                <ProtectedRoute roles={['super-admin']}>
+                  <UserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/schools" element={
+                <ProtectedRoute roles={['super-admin']}>
+                  <SchoolManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/audit-logs" element={
+                <ProtectedRoute roles={['super-admin']}>
+                  <AuditLogs />
+                </ProtectedRoute>
+              } />
             </Route>
             
             {/* 404 Route */}

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Card,
@@ -27,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Search, FileText, Filter } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { MisconductReport, ReportStatus } from '../types';
 
 // Mock data for reports
@@ -135,6 +136,7 @@ const mockReports: MisconductReport[] = [
 ];
 
 const Reports: React.FC = () => {
+  const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReportStatus | 'all'>('all');
@@ -203,7 +205,7 @@ const Reports: React.FC = () => {
         </div>
 
         {hasRole(['driver']) && (
-          <Button onClick={() => window.location.href = '/new-report'}>
+          <Button onClick={() => navigate('/new-report')}>
             Create New Report
           </Button>
         )}
@@ -292,7 +294,7 @@ const Reports: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.location.href = `/reports/${report.id}`}
+                          onClick={() => navigate(`/reports/${report.id}`)}
                         >
                           <FileText size={16} className="mr-1" />
                           View
