@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,7 +25,7 @@ import { format } from 'date-fns';
 import { CalendarCheck, MessageSquare, ArrowLeft, Download } from 'lucide-react';
 import { MisconductReport, ReportStatus, Comment, AuditLog, UserRole } from '../types';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 // Mock data for reports (same as in Reports.tsx)
