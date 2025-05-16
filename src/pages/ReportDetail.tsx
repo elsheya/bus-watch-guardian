@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -22,9 +21,11 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { CalendarCheck, MessageSquare, ArrowLeft } from 'lucide-react';
+import { CalendarCheck, MessageSquare, ArrowLeft, Download } from 'lucide-react';
 import { MisconductReport, ReportStatus, Comment, AuditLog, UserRole } from '../types';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Mock data for reports (same as in Reports.tsx)
 const mockReports: MisconductReport[] = [
@@ -163,6 +164,7 @@ const ReportDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
+  const reportRef = useRef<HTMLDivElement>(null);
   const [report, setReport] = useState<MisconductReport | undefined>(
     mockReports.find(r => r.id === id)
   );
@@ -171,6 +173,7 @@ const ReportDetail: React.FC = () => {
     report?.status
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
 
   if (!report) {
     return <div className="p-8">Report not found</div>;
@@ -178,6 +181,7 @@ const ReportDetail: React.FC = () => {
 
   const canAddComments = hasRole(['school-admin', 'super-admin']);
   const canChangeStatus = hasRole(['school-admin', 'super-admin']);
+  const canDownloadPdf = hasRole(['driver', 'school-admin', 'super-admin']);
 
   const handleAddComment = () => {
     if (!newComment.trim() || !user) return;
@@ -220,8 +224,11 @@ const ReportDetail: React.FC = () => {
       
       toast({
         title: "Comment Added",
-        description: "Your comment has been added to the report."
+        description: "Your comment has been added to the report. Email notification sent to driver."
       });
+      
+      // Simulate sending email notification to driver
+      console.log(`Email notification sent to driver about new comment from ${user.name}`);
       
       // In a real app, you would save the audit log to the server
       console.log('Audit log created:', auditLog);
@@ -258,12 +265,78 @@ const ReportDetail: React.FC = () => {
       
       toast({
         title: "Status Updated",
-        description: `Report status has been updated to ${status}.`
+        description: `Report status has been updated to ${status}. Email notification sent to driver.`
       });
+      
+      // Simulate sending email notification about status update
+      console.log(`Email notification sent to driver about status update to ${status}`);
       
       // In a real app, you would save the audit log to the server
       console.log('Audit log created:', auditLog);
     }, 500);
+  };
+
+  const handleExportPdf = async () => {
+    if (!reportRef.current) return;
+    
+    setIsPdfGenerating(true);
+    
+    try {
+      // Create an audit log for the PDF download
+      if (user) {
+        const auditLog = generateAuditLog(
+          user.id,
+          user.name,
+          user.role,
+          'export_pdf',
+          'report',
+          report.id,
+          `Report #${report.id} exported as PDF`
+        );
+        console.log('Audit log created:', auditLog);
+      }
+      
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        logging: false,
+        useCORS: true
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Add footer with date and page number
+      const date = format(new Date(), 'yyyy-MM-dd HH:mm');
+      pdf.setFontSize(8);
+      pdf.text(`Generated on: ${date}`, 10, pageHeight - 10);
+      pdf.text(`BusWatch - Misconduct Report #${report.id}`, imgWidth / 2, pageHeight - 10, { align: 'center' });
+      
+      pdf.save(`BusWatch_Report_${report.id}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+      
+      toast({
+        title: "PDF Generated",
+        description: "Report has been exported as PDF successfully."
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsPdfGenerating(false);
+    }
   };
 
   return (
@@ -281,8 +354,21 @@ const ReportDetail: React.FC = () => {
           </Button>
           <h1 className="text-3xl font-bold">Misconduct Report</h1>
         </div>
-        <div className="flex items-center">
-          <span className="mr-2">Status:</span>
+        <div className="flex items-center gap-2">
+          {canDownloadPdf && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPdf}
+              disabled={isPdfGenerating}
+              className="flex items-center gap-1"
+            >
+              <Download size={16} />
+              {isPdfGenerating ? "Generating..." : "Export PDF"}
+            </Button>
+          )}
+          
+          <span className="ml-2 mr-2">Status:</span>
           {getStatusBadge(report.status)}
           
           {canChangeStatus && (
@@ -306,7 +392,7 @@ const ReportDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6" ref={reportRef}>
         {/* Report details */}
         <div className="md:col-span-2">
           <Card>

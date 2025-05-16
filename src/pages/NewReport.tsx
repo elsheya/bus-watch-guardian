@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +23,22 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { AuditLog, UserRole } from '../types';
+
+// Function to generate audit logs
+const generateAuditLog = (userId: string, userName: string, userRole: UserRole, action: string, entityType: 'report' | 'user' | 'school' | 'comment' | 'system', entityId: string, details: string): AuditLog => {
+  return {
+    id: Math.random().toString(36).substring(2, 9),
+    userId,
+    userName,
+    userRole,
+    action,
+    entityType,
+    entityId,
+    details,
+    createdAt: new Date()
+  };
+};
 
 const NewReport: React.FC = () => {
   const { user } = useAuth();
@@ -63,9 +78,29 @@ const NewReport: React.FC = () => {
       // Simulate API call with a timeout
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // Generate a mock report ID
+      const reportId = Math.random().toString(36).substring(2, 9);
+      
+      // Create audit log for report submission
+      if (user) {
+        const auditLog = generateAuditLog(
+          user.id,
+          user.name,
+          user.role,
+          'create_report',
+          'report',
+          reportId,
+          `New misconduct report created for student ${formData.studentName}`
+        );
+        console.log('Audit log created:', auditLog);
+      }
+      
+      // Simulate sending email notification to school admin
+      console.log(`Email notification sent to school admin about new report for student ${formData.studentName}`);
+      
       toast({
         title: "Report Submitted Successfully",
-        description: "Your misconduct report has been submitted and will be reviewed by school administrators."
+        description: "Your misconduct report has been submitted and will be reviewed by school administrators. Email notification sent."
       });
       
       navigate('/reports');
