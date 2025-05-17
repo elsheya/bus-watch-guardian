@@ -9,13 +9,214 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          user_id?: string
+          user_name?: string
+          user_role?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          report_id: string
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          report_id: string
+          user_id: string
+          user_name: string
+          user_role: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          report_id?: string
+          user_id?: string
+          user_name?: string
+          user_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "misconduct_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      misconduct_reports: {
+        Row: {
+          attachment_url: string | null
+          bus_route: string
+          created_at: string | null
+          description: string
+          driver_id: string
+          driver_name: string
+          id: string
+          incident_date: string | null
+          school_id: string
+          school_name: string
+          status: string
+          student_name: string
+        }
+        Insert: {
+          attachment_url?: string | null
+          bus_route: string
+          created_at?: string | null
+          description: string
+          driver_id: string
+          driver_name: string
+          id?: string
+          incident_date?: string | null
+          school_id: string
+          school_name: string
+          status: string
+          student_name: string
+        }
+        Update: {
+          attachment_url?: string | null
+          bus_route?: string
+          created_at?: string | null
+          description?: string
+          driver_id?: string
+          driver_name?: string
+          id?: string
+          incident_date?: string | null
+          school_id?: string
+          school_name?: string
+          status?: string
+          student_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "misconduct_reports_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          school_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          school_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          school_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string | null
+          id: string
+          name: string
+          phone: string | null
+          state: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          state?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          state?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_school_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -1,9 +1,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
+import { supabase } from '../integrations/supabase/client';
+import { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -13,7 +16,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock authentication data for demo purposes
+// Demo users to use when Supabase auth fails
 const MOCK_USERS: User[] = [
   {
     id: '1',
@@ -42,48 +45,130 @@ const MOCK_USERS: User[] = [
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved authentication in localStorage
-    const savedUser = localStorage.getItem('buswatch_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error('Failed to parse user from localStorage', e);
-        localStorage.removeItem('buswatch_user');
+    // Set up the auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        console.log('Auth state changed:', event);
+        setSession(currentSession);
+        
+        if (currentSession?.user) {
+          // Fetch the user's profile from Supabase
+          setTimeout(() => {
+            fetchUserProfile(currentSession.user.id);
+          }, 0);
+        } else {
+          setUser(null);
+        }
       }
-    }
-    setLoading(false);
+    );
+
+    // Then check for an existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      
+      if (currentSession?.user) {
+        fetchUserProfile(currentSession.user.id);
+      } else {
+        // Check for saved authentication in localStorage
+        const savedUser = localStorage.getItem('buswatch_user');
+        if (savedUser) {
+          try {
+            setUser(JSON.parse(savedUser));
+          } catch (e) {
+            console.error('Failed to parse user from localStorage', e);
+            localStorage.removeItem('buswatch_user');
+          }
+        }
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        const userProfile: User = {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole,
+          schoolId: data.school_id,
+          createdAt: new Date(data.created_at)
+        };
+        
+        setUser(userProfile);
+        localStorage.setItem('buswatch_user', JSON.stringify(userProfile));
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   const login = async (email: string, password: string): Promise<void> => {
     setLoading(true);
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Find user by email (mock authentication)
-    const foundUser = MOCK_USERS.find(u => u.email === email);
-    
-    if (!foundUser) {
+    try {
+      // Try to log in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // If successful, the onAuthStateChange listener will handle setting the user
+    } catch (error) {
+      console.error('Supabase login error:', error);
+      
+      // Fall back to mock login for demo purposes
+      const foundUser = MOCK_USERS.find(u => u.email === email);
+      
+      if (!foundUser) {
+        setLoading(false);
+        throw new Error('Invalid email or password');
+      }
+      
+      // Save user to state and localStorage
+      setUser(foundUser);
+      localStorage.setItem('buswatch_user', JSON.stringify(foundUser));
+      
       setLoading(false);
-      throw new Error('Invalid email or password');
     }
-    
-    // In a real app, you'd verify the password here
-    
-    // Save user to state and localStorage
-    setUser(foundUser);
-    localStorage.setItem('buswatch_user', JSON.stringify(foundUser));
-    
-    setLoading(false);
   };
   
   const logout = async (): Promise<void> => {
-    // Clear user data
+    try {
+      // Try to sign out with Supabase
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error signing out with Supabase:', error);
+    }
+    
+    // Clear user data regardless of Supabase response
     setUser(null);
+    setSession(null);
     localStorage.removeItem('buswatch_user');
   };
   
@@ -99,6 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const value = {
     user,
+    session,
     loading,
     login,
     logout,

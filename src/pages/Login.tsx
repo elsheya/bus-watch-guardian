@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
+
+  // Check if we have saved credentials
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('buswatch_email');
+    const shouldRemember = localStorage.getItem('buswatch_remember') === 'true';
+    
+    if (savedEmail && shouldRemember) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +37,15 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Save email if "Remember Me" is checked
+      if (rememberMe) {
+        localStorage.setItem('buswatch_email', email);
+        localStorage.setItem('buswatch_remember', 'true');
+      } else {
+        localStorage.removeItem('buswatch_email');
+        localStorage.removeItem('buswatch_remember');
+      }
+
       await login(email, password);
       toast({
         title: "Welcome to BusWatch",
@@ -84,6 +106,14 @@ const Login: React.FC = () => {
                   placeholder="Any password will work for demo"
                   required
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="remember-me" 
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                />
+                <Label htmlFor="remember-me" className="text-sm cursor-pointer">Remember me</Label>
               </div>
             </CardContent>
             <CardFooter>
