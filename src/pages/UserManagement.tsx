@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
 import {
   Card,
   CardContent,
@@ -25,7 +26,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -39,81 +39,18 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { User, UserRole, School } from '../types';
 import { useToast } from '@/hooks/use-toast';
-import { Search, UserPlus, Users, Pencil, Trash2 } from 'lucide-react';
-
-// Mock data for users
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Driver',
-    email: 'driver@buswatch.com',
-    role: 'driver',
-    schoolId: '1',
-    createdAt: new Date('2023-01-15')
-  },
-  {
-    id: '2',
-    name: 'Sarah Admin',
-    email: 'schooladmin@buswatch.com',
-    role: 'school-admin',
-    schoolId: '1',
-    createdAt: new Date('2023-01-10')
-  },
-  {
-    id: '3',
-    name: 'Mike Super',
-    email: 'superadmin@buswatch.com',
-    role: 'super-admin',
-    createdAt: new Date('2023-01-01')
-  },
-  {
-    id: '4',
-    name: 'Emily Driver',
-    email: 'emily@buswatch.com',
-    role: 'driver',
-    schoolId: '2',
-    createdAt: new Date('2023-02-15')
-  },
-  {
-    id: '5',
-    name: 'Robert Admin',
-    email: 'robert@buswatch.com',
-    role: 'school-admin',
-    schoolId: '2',
-    createdAt: new Date('2023-02-10')
-  }
-];
-
-// Mock data for schools
-const mockSchools: School[] = [
-  {
-    id: '1',
-    name: 'Washington High School',
-    address: '123 Main St',
-    city: 'Washington',
-    state: 'DC',
-    zip: '20001',
-    phone: '(202) 555-0100'
-  },
-  {
-    id: '2',
-    name: 'Lincoln Middle School',
-    address: '456 Park Ave',
-    city: 'Washington',
-    state: 'DC',
-    zip: '20002',
-    phone: '(202) 555-0200'
-  }
-];
+import { Search, UserPlus, Users, Pencil, Trash2, Loader2 } from 'lucide-react';
 
 const UserManagement: React.FC = () => {
   const { hasRole } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [users, setUsers] = useState(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -121,6 +58,68 @@ const UserManagement: React.FC = () => {
     schoolId: '',
     password: '' // For new users only
   });
+
+  // Fetch users and schools from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch profiles (users)
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*');
+
+        if (profilesError) {
+          throw profilesError;
+        }
+
+        // Transform profiles data to match User type
+        const transformedUsers: User[] = profilesData.map(profile => ({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role as UserRole,
+          schoolId: profile.school_id,
+          createdAt: new Date(profile.created_at)
+        }));
+
+        setUsers(transformedUsers);
+
+        // Fetch schools
+        const { data: schoolsData, error: schoolsError } = await supabase
+          .from('schools')
+          .select('*');
+
+        if (schoolsError) {
+          throw schoolsError;
+        }
+
+        // Transform schools data to match School type
+        const transformedSchools: School[] = schoolsData.map(school => ({
+          id: school.id,
+          name: school.name,
+          address: school.address,
+          city: school.city,
+          state: school.state,
+          zip: school.zip,
+          phone: school.phone
+        }));
+
+        setSchools(transformedSchools);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load users and schools data.',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
 
   // Filter users based on search query
   const filteredUsers = users.filter(user => {
@@ -137,7 +136,7 @@ const UserManagement: React.FC = () => {
 
   const getSchoolName = (schoolId?: string) => {
     if (!schoolId) return 'N/A';
-    const school = mockSchools.find(s => s.id === schoolId);
+    const school = schools.find(s => s.id === schoolId);
     return school ? school.name : 'Unknown School';
   };
   
@@ -202,59 +201,120 @@ const UserManagement: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isEditing && selectedUser) {
-      // Update existing user
-      const updatedUsers = users.map(user => {
-        if (user.id === selectedUser.id) {
-          return {
-            ...user,
+    try {
+      if (isEditing && selectedUser) {
+        // Update existing user in Supabase
+        const { error } = await supabase
+          .from('profiles')
+          .update({
             name: formData.name,
             email: formData.email,
             role: formData.role,
-            schoolId: formData.schoolId || undefined
+            school_id: formData.schoolId || null
+          })
+          .eq('id', selectedUser.id);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setUsers(prevUsers => prevUsers.map(user => {
+          if (user.id === selectedUser.id) {
+            return {
+              ...user,
+              name: formData.name,
+              email: formData.email,
+              role: formData.role,
+              schoolId: formData.schoolId || undefined
+            };
+          }
+          return user;
+        }));
+        
+        toast({
+          title: "User Updated",
+          description: `${formData.name}'s information has been updated.`
+        });
+      } else {
+        // Create new user via Supabase Auth API first
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: formData.email,
+          password: formData.password,
+          email_confirm: true,
+          user_metadata: {
+            name: formData.name,
+            role: formData.role
+          }
+        });
+        
+        if (authError) throw authError;
+        
+        // If auth creation successful, update the profile with school_id
+        if (authData.user) {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              school_id: formData.schoolId || null
+            })
+            .eq('id', authData.user.id);
+          
+          if (updateError) throw updateError;
+          
+          // Add to local state
+          const newUser: User = {
+            id: authData.user.id,
+            name: formData.name,
+            email: formData.email,
+            role: formData.role,
+            schoolId: formData.schoolId || undefined,
+            createdAt: new Date()
           };
+          
+          setUsers(prevUsers => [...prevUsers, newUser]);
+          
+          toast({
+            title: "User Created",
+            description: `${formData.name} has been added as a ${formData.role}.`
+          });
         }
-        return user;
-      });
-      
-      setUsers(updatedUsers);
+      }
+    } catch (error) {
+      console.error('Error saving user:', error);
       toast({
-        title: "User Updated",
-        description: `${formData.name}'s information has been updated.`
+        title: "Error",
+        description: `Failed to ${isEditing ? 'update' : 'create'} user. ${(error as Error).message}`,
+        variant: "destructive"
       });
-    } else {
-      // Add new user
-      const newUser: User = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        schoolId: formData.schoolId || undefined,
-        createdAt: new Date()
-      };
-      
-      setUsers([...users, newUser]);
-      toast({
-        title: "User Created",
-        description: `${formData.name} has been added as a ${formData.role}.`
-      });
+    } finally {
+      setDialogOpen(false);
     }
-    
-    setDialogOpen(false);
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
-      const updatedUsers = users.filter(user => user.id !== userId);
-      setUsers(updatedUsers);
-      
-      toast({
-        title: "User Deleted",
-        description: "The user has been removed from the system."
-      });
+      try {
+        // Delete user via Supabase Auth API
+        const { error } = await supabase.auth.admin.deleteUser(userId);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
+        
+        toast({
+          title: "User Deleted",
+          description: "The user has been removed from the system."
+        });
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        toast({
+          title: "Error",
+          description: `Failed to delete user. ${(error as Error).message}`,
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -293,7 +353,7 @@ const UserManagement: React.FC = () => {
                 System Users
               </CardTitle>
               <CardDescription>
-                {filteredUsers.length} users found
+                {isLoading ? 'Loading users...' : `${filteredUsers.length} users found`}
               </CardDescription>
             </div>
             <div className="relative">
@@ -322,14 +382,23 @@ const UserManagement: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                        Loading users...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>{getSchoolName(user.schoolId)}</TableCell>
-                      <TableCell>{format(user.createdAt, 'MMM d, yyyy')}</TableCell>
+                      <TableCell>{user.createdAt ? format(user.createdAt, 'MMM d, yyyy') : 'N/A'}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
                           <Button
@@ -441,7 +510,7 @@ const UserManagement: React.FC = () => {
                       <SelectValue placeholder="Select school" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockSchools.map((school) => (
+                      {schools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.name}
                         </SelectItem>
