@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
 import {
   Card,
   CardContent,
@@ -29,47 +30,17 @@ import {
 import { Label } from '@/components/ui/label';
 import { School } from '../types';
 import { useToast } from '@/hooks/use-toast';
-import { Search, School as SchoolIcon, PlusCircle, Pencil, Trash2 } from 'lucide-react';
-
-// Mock data for schools
-const mockSchools: School[] = [
-  {
-    id: '1',
-    name: 'Washington High School',
-    address: '123 Main St',
-    city: 'Washington',
-    state: 'DC',
-    zip: '20001',
-    phone: '(202) 555-0100'
-  },
-  {
-    id: '2',
-    name: 'Lincoln Middle School',
-    address: '456 Park Ave',
-    city: 'Washington',
-    state: 'DC',
-    zip: '20002',
-    phone: '(202) 555-0200'
-  },
-  {
-    id: '3',
-    name: 'Roosevelt Elementary',
-    address: '789 Oak Dr',
-    city: 'Arlington',
-    state: 'VA',
-    zip: '22201',
-    phone: '(703) 555-0300'
-  }
-];
+import { Search, School as SchoolIcon, PlusCircle, Pencil, Trash2, Loader2 } from 'lucide-react';
 
 const SchoolManagement: React.FC = () => {
   const { hasRole } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [schools, setSchools] = useState(mockSchools);
+  const [schools, setSchools] = useState<School[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -78,6 +49,46 @@ const SchoolManagement: React.FC = () => {
     zip: '',
     phone: ''
   });
+
+  // Fetch schools from Supabase
+  useEffect(() => {
+    const fetchSchools = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('schools')
+          .select('*');
+
+        if (error) {
+          throw error;
+        }
+
+        // Transform data to match School type
+        const transformedSchools: School[] = data.map(school => ({
+          id: school.id,
+          name: school.name,
+          address: school.address || '',
+          city: school.city || '',
+          state: school.state || '',
+          zip: school.zip || '',
+          phone: school.phone || ''
+        }));
+
+        setSchools(transformedSchools);
+      } catch (error) {
+        console.error('Error fetching schools:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load schools data.',
+          variant: 'destructive'
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSchools();
+  }, [toast]);
 
   // Filter schools based on search query
   const filteredSchools = schools.filter(school => {
@@ -128,15 +139,66 @@ const SchoolManagement: React.FC = () => {
     setDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isEditing && selectedSchool) {
-      // Update existing school
-      const updatedSchools = schools.map(school => {
-        if (school.id === selectedSchool.id) {
-          return {
-            ...school,
+    try {
+      if (isEditing && selectedSchool) {
+        // Update existing school in Supabase
+        const { error } = await supabase
+          .from('schools')
+          .update({
+            name: formData.name,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
+            phone: formData.phone
+          })
+          .eq('id', selectedSchool.id);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setSchools(prevSchools => prevSchools.map(school => {
+          if (school.id === selectedSchool.id) {
+            return {
+              ...school,
+              name: formData.name,
+              address: formData.address,
+              city: formData.city,
+              state: formData.state,
+              zip: formData.zip,
+              phone: formData.phone
+            };
+          }
+          return school;
+        }));
+        
+        toast({
+          title: "School Updated",
+          description: `${formData.name} has been updated successfully.`
+        });
+      } else {
+        // Add new school to Supabase
+        const { data, error } = await supabase
+          .from('schools')
+          .insert({
+            name: formData.name,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
+            phone: formData.phone
+          })
+          .select();
+        
+        if (error) throw error;
+        
+        if (data && data[0]) {
+          // Add to local state
+          const newSchool: School = {
+            id: data[0].id,
             name: formData.name,
             address: formData.address,
             city: formData.city,
@@ -144,46 +206,53 @@ const SchoolManagement: React.FC = () => {
             zip: formData.zip,
             phone: formData.phone
           };
+          
+          setSchools(prevSchools => [...prevSchools, newSchool]);
+          
+          toast({
+            title: "School Created",
+            description: `${formData.name} has been added to the system.`
+          });
         }
-        return school;
-      });
-      
-      setSchools(updatedSchools);
+      }
+    } catch (error) {
+      console.error('Error saving school:', error);
       toast({
-        title: "School Updated",
-        description: `${formData.name} has been updated successfully.`
+        title: "Error",
+        description: `Failed to ${isEditing ? 'update' : 'create'} school. ${(error as Error).message}`,
+        variant: "destructive"
       });
-    } else {
-      // Add new school
-      const newSchool: School = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: formData.name,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zip: formData.zip,
-        phone: formData.phone
-      };
-      
-      setSchools([...schools, newSchool]);
-      toast({
-        title: "School Created",
-        description: `${formData.name} has been added to the system.`
-      });
+    } finally {
+      setDialogOpen(false);
     }
-    
-    setDialogOpen(false);
   };
 
-  const handleDeleteSchool = (schoolId: string) => {
+  const handleDeleteSchool = async (schoolId: string) => {
     if (window.confirm('Are you sure you want to delete this school? This will affect all associated users and reports.')) {
-      const updatedSchools = schools.filter(school => school.id !== schoolId);
-      setSchools(updatedSchools);
-      
-      toast({
-        title: "School Deleted",
-        description: "The school has been removed from the system."
-      });
+      try {
+        // Delete school from Supabase
+        const { error } = await supabase
+          .from('schools')
+          .delete()
+          .eq('id', schoolId);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setSchools(prevSchools => prevSchools.filter(school => school.id !== schoolId));
+        
+        toast({
+          title: "School Deleted",
+          description: "The school has been removed from the system."
+        });
+      } catch (error) {
+        console.error('Error deleting school:', error);
+        toast({
+          title: "Error",
+          description: `Failed to delete school. ${(error as Error).message}`,
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -222,7 +291,7 @@ const SchoolManagement: React.FC = () => {
                 Schools
               </CardTitle>
               <CardDescription>
-                {filteredSchools.length} schools found
+                {isLoading ? 'Loading schools...' : `${filteredSchools.length} schools found`}
               </CardDescription>
             </div>
             <div className="relative">
@@ -251,7 +320,16 @@ const SchoolManagement: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSchools.length > 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                        Loading schools...
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : filteredSchools.length > 0 ? (
                   filteredSchools.map((school) => (
                     <TableRow key={school.id}>
                       <TableCell className="font-medium">{school.name}</TableCell>
